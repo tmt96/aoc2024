@@ -1,7 +1,7 @@
 use regex::Regex;
 
 use crate::solver::Solver;
-use std::io::{self, BufRead, BufReader, Read};
+use std::io::{self, BufReader, Read};
 
 pub struct Problem;
 
