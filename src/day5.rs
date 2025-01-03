@@ -1,6 +1,5 @@
 use crate::solver::Solver;
 use std::{
-    cmp::Ordering,
     collections::{HashMap, HashSet},
     io::{self, BufRead, BufReader},
 };
@@ -72,19 +71,12 @@ impl Solver for Problem {
     }
 
     fn solve_second(&self, input: &Self::Input) -> Self::Output2 {
-        let mut successor_map: HashMap<i64, HashSet<i64>> = HashMap::new();
+        let mut successor_map = HashMap::new();
         for (fst, snd) in &input.rules {
-            let snd_successor_list = if successor_map.contains_key(snd) {
-                successor_map[snd].clone()
-            } else {
-                HashSet::new()
-            };
-            let fst_successor_list = successor_map.entry(*fst).or_default();
-
-            fst_successor_list.insert(*snd);
-            for i in snd_successor_list.iter() {
-                fst_successor_list.insert(*i);
-            }
+            successor_map
+                .entry(fst)
+                .or_insert_with(HashSet::new)
+                .insert(snd);
         }
 
         input
@@ -102,19 +94,27 @@ impl Solver for Problem {
                 }
                 false
             })
-            .fold(0, |acc, update| {
+            .map(|update| {
+                let len = update.len();
                 let mut update = update.clone();
-                update.sort_by(|a, b| {
-                    if successor_map.contains_key(a) && successor_map[a].contains(b) {
-                        Ordering::Less
-                    } else if successor_map.contains_key(b) && successor_map[b].contains(a) {
-                        Ordering::Greater
-                    } else {
-                        Ordering::Equal
+                let mut ok = false;
+                while !ok {
+                    ok = true;
+                    for i in 0..(len - 1) {
+                        for j in (i + 1)..len {
+                            let (a, b) = (update[i], update[j]);
+                            if successor_map.contains_key(&b) && successor_map[&b].contains(&a) {
+                                update[i] = b;
+                                update[j] = a;
+                                ok = false;
+                            }
+                        }
                     }
-                });
-                acc + update[update.len() / 2]
+                }
+
+                update[len / 2]
             })
+            .sum()
     }
 }
 
